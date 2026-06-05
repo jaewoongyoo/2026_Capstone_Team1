@@ -135,8 +135,8 @@ cd backend
 
 ## More Docs
 
+- [환경 세팅 가이드](docs/ENVIRONMENT_SETUP.md)
 - [통합 테스트 절차](docs/INTEGRATION_TEST.md)
 - [MCP API 연동 문서](mcp-server/API_INTEGRATION.md)
 - [MCP 서버 README](mcp-server/README.md)
 - [Frontend README](frontend/README.md)
-

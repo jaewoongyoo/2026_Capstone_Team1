@@ -54,8 +54,8 @@ const CORS_ORIGIN = process.env.MCP_HTTP_CORS_ORIGIN ?? "*";
 const SUPPORTED_WIDGET_VISUALIZATIONS: WidgetVisualization[] = [
   { label: "게이지", widgetType: "GAUGE", chartType: "gauge", width: 3, height: 3, aliases: ["게이지", "gauge"] },
   { label: "선 그래프", widgetType: "TREND", chartType: "line", width: 6, height: 3, aliases: ["선그래프", "선 그래프", "라인", "라인그래프", "line", "trend", "추이"] },
-  { label: "막대그래프", widgetType: "BAR_V", chartType: "bar", width: 4, height: 3, aliases: ["막대", "막대그래프", "세로막대", "바그래프", "bar", "bar_v"] },
-  { label: "가로 막대그래프", widgetType: "BAR_H", chartType: "bar-horizontal", width: 4, height: 3, aliases: ["가로막대", "가로 막대", "horizontal bar", "bar_h"] },
+  { label: "세로 막대그래프", widgetType: "BAR_V", chartType: "bar", width: 4, height: 3, aliases: ["막대", "막대그래프", "세로막대", "세로 막대", "세로 막대그래프", "바그래프", "vertical bar", "bar", "bar_v"] },
+  { label: "가로 막대그래프", widgetType: "BAR_H", chartType: "bar-horizontal", width: 6, height: 3, aliases: ["가로막대", "가로 막대", "가로 막대그래프", "horizontal bar", "bar_h"] },
   { label: "도넛 그래프", widgetType: "DONUT", chartType: "donut", width: 3, height: 3, aliases: ["도넛", "도넛그래프", "도넛 그래프", "donut"] },
   { label: "상태 위젯", widgetType: "STATUS", chartType: "status", width: 3, height: 3, aliases: ["상태", "상태위젯", "상태 위젯", "status"] },
   { label: "로그 위젯", widgetType: "LOG", chartType: "log", width: 6, height: 3, aliases: ["로그", "로그위젯", "로그 위젯", "log"] },
@@ -174,9 +174,35 @@ function extractDashboardId(text: string): number | undefined {
   return match ? Number(match[1]) : undefined;
 }
 
+function extractEquipmentEntityId(text: string): number | undefined {
+  const match =
+    text.match(/equipmentEntityId\s*=?\s*(\d+)/i) ??
+    text.match(/equipment\s*entity\s*id\s*=?\s*(\d+)/i) ??
+    text.match(/장비\s*(?:id|아이디)\s*=?\s*(\d+)/i);
+
+  return match ? Number(match[1]) : undefined;
+}
+
 function findVisualization(text: string): WidgetVisualization | null {
   const normalized = text.toLowerCase();
   const loose = normalizeLoose(normalized);
+
+  if (
+    loose.includes("가로막대") ||
+    loose.includes("horizontalbar") ||
+    loose.includes("barh")
+  ) {
+    return SUPPORTED_WIDGET_VISUALIZATIONS.find((item) => item.widgetType === "BAR_H") ?? null;
+  }
+
+  if (
+    loose.includes("세로막대") ||
+    loose.includes("verticalbar") ||
+    loose.includes("barv")
+  ) {
+    return SUPPORTED_WIDGET_VISUALIZATIONS.find((item) => item.widgetType === "BAR_V") ?? null;
+  }
+
   const candidates = SUPPORTED_WIDGET_VISUALIZATIONS.flatMap((visualization) =>
     visualization.aliases.map((alias) => ({ visualization, alias }))
   ).sort((a, b) => normalizeLoose(b.alias).length - normalizeLoose(a.alias).length);
@@ -236,11 +262,10 @@ function formatEquipmentList(equipment: EquipmentCurrent[]): string {
 
 function findEquipment(text: string, equipment: EquipmentCurrent[]): EquipmentCurrent[] {
   const normalized = normalize(text);
-  const explicitId = text.match(/equipmentEntityId\s*=?\s*(\d+)|장비\s*(\d+)/i)?.[1]
-    ?? text.match(/equipmentEntityId\s*=?\s*(\d+)|장비\s*(\d+)/i)?.[2];
+  const explicitId = extractEquipmentEntityId(text);
 
   if (explicitId) {
-    return equipment.filter((item) => String(item.equipmentId) === explicitId);
+    return equipment.filter((item) => item.equipmentId === explicitId);
   }
 
   const byName = equipment.filter((item) => {
@@ -258,15 +283,13 @@ function findWidgetEquipment(
   dashboardId?: number
 ): EquipmentCurrent[] {
   const normalized = normalize(text);
-  const explicitEquipmentId =
-    text.match(/equipmentEntityId\s*=?\s*(\d+)/i)?.[1] ??
-    text.match(/장비\s*(?:id|아이디)\s*=?\s*(\d+)/i)?.[1];
+  const explicitEquipmentId = extractEquipmentEntityId(text);
   const candidates = dashboardId
     ? equipment.filter((item) => item.dashboardId === dashboardId)
     : equipment;
 
   if (explicitEquipmentId) {
-    return candidates.filter((item) => String(item.equipmentId) === explicitEquipmentId);
+    return candidates.filter((item) => item.equipmentId === explicitEquipmentId);
   }
 
   return candidates.filter((item) => {
@@ -1105,6 +1128,21 @@ async function handleChat(request: IncomingMessage): Promise<ChatResponse> {
           ...matches.map((item) => `- ${item.equipmentName} (equipmentEntityId=${item.equipmentId}, dashboardId=${item.dashboardId ?? "-"})`)
         ].join("\n"),
         data: matches
+      };
+    }
+
+    if (extractEquipmentEntityId(message) || normalized.includes("장비")) {
+      return {
+        action: "equipment_not_found",
+        reply: [
+          "조건에 맞는 장비를 찾지 못했습니다.",
+          "",
+          "현재 조회 가능한 장비는 다음과 같습니다.",
+          ...equipment.map((item) => `- ${item.equipmentName} (equipmentEntityId=${item.equipmentId}, dashboardId=${item.dashboardId ?? "-"})`),
+          "",
+          "위 목록의 equipmentEntityId 또는 dashboardId를 포함해서 다시 요청해주세요."
+        ].join("\n"),
+        data: equipment
       };
     }
   }
