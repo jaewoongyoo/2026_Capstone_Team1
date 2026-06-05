@@ -1,0 +1,35 @@
+type AppLogoProps = {
+  className?: string;
+  title?: string;
+};
+
+export default function AppLogo({ className = "h-6 w-6", title = "Dashboard logo" }: AppLogoProps) {
+  return (
+    <svg className={className} viewBox="0 0 48 48" fill="none" role="img" aria-label={title}>
+      <circle cx="24" cy="24" r="21" fill="#020617" />
+      <path
+        d="M36.5 17.8c-3.4-6.3-12.7-8.6-19.4-4.6-7 4.2-8.7 13.8-3.4 19.8 4.4 5 12.8 5.7 17.9 1.2 4.1-3.6 4.2-10.1.4-13.4-3.1-2.7-8.2-2.5-10.8.5-2 2.3-1.5 5.9.9 7.3 2.1 1.3 4.9.5 5.9-1.4"
+        stroke="url(#app-logo-spiral)"
+        strokeWidth="5.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 33.4c4.8 3.1 11.8 3.4 17.1-.6"
+        stroke="rgba(255,255,255,.62)"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="35.8" cy="17.6" r="4.2" fill="#22D3EE" stroke="white" strokeWidth="1.6" />
+      <circle cx="28.1" cy="27.1" r="2.6" fill="#A78BFA" stroke="white" strokeWidth="1.3" />
+      <circle cx="15.2" cy="33.3" r="2.8" fill="#34D399" stroke="white" strokeWidth="1.3" />
+      <defs>
+        <linearGradient id="app-logo-spiral" x1="11" x2="39" y1="36" y2="11" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#34D399" />
+          <stop offset=".44" stopColor="#38BDF8" />
+          <stop offset="1" stopColor="#818CF8" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}

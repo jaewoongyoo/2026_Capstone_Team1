@@ -1,0 +1,39 @@
+services:
+
+  # ── MQTT 브로커 ────────────────────────────────────────────────────
+  mqtt-broker:
+    image: eclipse-mosquitto:2.0
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"   # MQTT
+      - "9001:9001"   # WebSocket
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - simulator-net
+    restart: unless-stopped
+
+  # ── 엣지 게이트웨이 ────────────────────────────────────────────────
+  edge-gateway:
+    build:
+      context: ..
+      dockerfile: edge/Dockerfile
+    container_name: edge-gateway
+    depends_on:
+      - mqtt-broker
+    ports:
+      - "5000:5000"   # CVD-CHAMBER-01 SECS/GEM
+      - "5001:5001"   # ETCHER-01 SECS/GEM
+    environment:
+      - MQTT_HOST=mqtt-broker      # 컨테이너 내부에선 서비스명으로 접근
+      - EDGE_GATEWAY_BIND_HOST=0.0.0.0
+      - PYTHONUNBUFFERED=1
+    networks:
+      - simulator-net
+    restart: unless-stopped
+
+networks:
+  simulator-net:
+    driver: bridge

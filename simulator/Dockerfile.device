@@ -1,0 +1,8 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY common ./common
+COPY simulator/secsgem_device.py .
+
+CMD ["python", "secsgem_device.py"]

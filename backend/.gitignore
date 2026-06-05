@@ -1,0 +1,84 @@
+HELP.md
+.gradle
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Logs ###
+*.log
+*.log.*
+logs/
+log/
+
+### Application Logs ###
+app_error.log
+app_startup.log
+dashboar.log
+dashboard.log
+
+### OS ###
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+### IDE Temporary Files ###
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-workspace
+
+### Environment ###
+.env
+.env.local
+.env.*.local
+
+### MCP Server ###
+mcp-server/node_modules/
+mcp-server/dist/
+mcp-server/.env
+
+### Application Configuration ###
+src/main/resources/application.yml
+src/main/resources/application-*.yml
+src/test/resources/application-test.yml
+!src/main/resources/application.yml
+!.run/
+!.run/*.run.xml
+!src/main/resources/application-example.yml

@@ -1,0 +1,124 @@
+name: Deploy backend on develop
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-develop
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: "21"
+
+      - name: Test and build boot jar
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean test bootJar
+
+      - name: Prepare SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/dashboard-key.pem
+          chmod 600 ~/.ssh/dashboard-key.pem
+          ssh-keygen -y -f ~/.ssh/dashboard-key.pem > /dev/null
+          ssh-keyscan -T 30 -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts || true
+
+      - name: Upload jar to EC2
+        run: |
+          JAR_PATH="$(ls build/libs/*.jar | head -n 1)"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/dashboard-key.pem "$JAR_PATH" \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ secrets.EC2_APP_PATH }}.new"
+
+      - name: Deploy and verify backend service
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/dashboard-key.pem "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" <<'REMOTE'
+          set -euo pipefail
+
+          SERVICE="${{ secrets.EC2_SERVICE_NAME }}"
+          APP_PATH="${{ secrets.EC2_APP_PATH }}"
+          NEW_APP_PATH="${APP_PATH}.new"
+
+          if [ ! -s "$NEW_APP_PATH" ]; then
+            echo "Uploaded jar is missing or empty: $NEW_APP_PATH"
+            exit 1
+          fi
+
+          OLD_PID="$(systemctl show "$SERVICE" -p MainPID --value || true)"
+          if [ "${OLD_PID:-0}" != "0" ]; then
+            echo "Stopping $SERVICE old pid=$OLD_PID"
+          else
+            echo "Stopping $SERVICE"
+          fi
+
+          sudo systemctl stop "$SERVICE"
+
+          for i in $(seq 1 30); do
+            ACTIVE_STATE="$(systemctl show "$SERVICE" -p ActiveState --value || true)"
+            CURRENT_PID="$(systemctl show "$SERVICE" -p MainPID --value || true)"
+            if [ "$ACTIVE_STATE" = "inactive" ] && [ "${CURRENT_PID:-0}" = "0" ]; then
+              break
+            fi
+            sleep 1
+          done
+
+          ACTIVE_STATE="$(systemctl show "$SERVICE" -p ActiveState --value || true)"
+          CURRENT_PID="$(systemctl show "$SERVICE" -p MainPID --value || true)"
+          if [ "$ACTIVE_STATE" != "inactive" ] || [ "${CURRENT_PID:-0}" != "0" ]; then
+            echo "$SERVICE did not stop cleanly; forcing termination"
+            sudo systemctl kill "$SERVICE" --kill-who=all --signal=SIGKILL || true
+            sleep 3
+            sudo systemctl reset-failed "$SERVICE" || true
+          fi
+
+          if [ "${OLD_PID:-0}" != "0" ] && kill -0 "$OLD_PID" 2>/dev/null; then
+            echo "Old backend process is still alive after stop: pid=$OLD_PID"
+            sudo journalctl -u "$SERVICE" -n 120 --no-pager
+            exit 1
+          fi
+
+          mv "$NEW_APP_PATH" "$APP_PATH"
+          chmod 664 "$APP_PATH"
+
+          sudo systemctl start "$SERVICE"
+
+          NEW_PID=""
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/api/public/health >/dev/null; then
+              NEW_PID="$(systemctl show "$SERVICE" -p MainPID --value)"
+              sudo systemctl is-active "$SERVICE"
+              break
+            fi
+            sleep 5
+          done
+
+          if [ -z "$NEW_PID" ] || [ "$NEW_PID" = "0" ]; then
+            echo "$SERVICE did not become healthy"
+            sudo systemctl status "$SERVICE" --no-pager
+            sudo journalctl -u "$SERVICE" -n 160 --no-pager
+            exit 1
+          fi
+
+          if [ "${OLD_PID:-0}" != "0" ] && [ "$NEW_PID" = "$OLD_PID" ]; then
+            echo "Service health check passed, but process pid did not change: $NEW_PID"
+            sudo systemctl status "$SERVICE" --no-pager
+            exit 1
+          fi
+
+          STARTED_AT="$(systemctl show "$SERVICE" -p ExecMainStartTimestamp --value)"
+          echo "$SERVICE deployed successfully: pid=$NEW_PID started_at=$STARTED_AT app=$APP_PATH"
+          REMOTE

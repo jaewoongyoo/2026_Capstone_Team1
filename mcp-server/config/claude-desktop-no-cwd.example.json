@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "capstone-dashboard": {
+      "command": "/opt/homebrew/bin/npm",
+      "args": [
+        "--prefix",
+        "/Users/jaewoong/Desktop/Dashboard/mcp-server",
+        "run",
+        "dev",
+        "--silent"
+      ],
+      "env": {
+        "DASHBOARD_API_BASE_URL": "https://api.43.201.141.9.nip.io",
+        "DASHBOARD_TLS_REJECT_UNAUTHORIZED": "false"
+      }
+    }
+  }
+}

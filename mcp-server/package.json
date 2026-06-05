@@ -1,0 +1,30 @@
+{
+  "name": "capstone-dashboard-mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server for capstone dashboard setup and operations automation.",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "http": "tsx src/http.ts",
+    "start:http": "node dist/http.js",
+    "smoke": "tsx scripts/smoke-test.ts",
+    "widget-test": "tsx scripts/widget-test.ts",
+    "ollama-chat": "tsx scripts/ollama-chat.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

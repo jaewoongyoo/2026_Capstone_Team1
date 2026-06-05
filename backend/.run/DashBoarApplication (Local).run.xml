@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="DashBoarApplication (Local)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="DashBoar.main" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.festapp.dashboard.DashBoarApplication" />
+    <option name="ACTIVE_PROFILES" value="local" />
+    <method v="2" />
+  </configuration>
+</component>
