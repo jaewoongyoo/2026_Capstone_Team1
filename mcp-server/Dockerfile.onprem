@@ -1,0 +1,22 @@
+FROM node:22-alpine AS build
+
+WORKDIR /workspace
+COPY mcp-server/package*.json ./
+RUN npm ci
+
+COPY mcp-server/ ./
+RUN npm run build
+
+FROM node:22-alpine
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY mcp-server/package*.json ./
+RUN npm ci --omit=dev
+
+COPY --from=build /workspace/dist ./dist
+COPY mcp-server/config ./config
+
+EXPOSE 3333
+CMD ["node", "dist/http.js"]

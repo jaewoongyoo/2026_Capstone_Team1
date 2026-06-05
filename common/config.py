@@ -9,12 +9,18 @@ EDGE_GATEWAY_BIND_HOST = os.environ.get("EDGE_GATEWAY_BIND_HOST", "0.0.0.0")
 EDGE_GATEWAY_HOST = os.environ.get("EDGE_GATEWAY_HOST", "127.0.0.1")
 
 DEVICES = {
-    "CVD-CHAMBER-01": {"port": 5000, "type": "CVD"},
-    "ETCHER-01":      {"port": 5001, "type": "ETCHER"},
+    "CVD-CHAMBER-01": {
+        "port": int(os.environ.get("EDGE_GATEWAY_CVD_PORT", "5000")),
+        "type": "CVD",
+    },
+    "ETCHER-01": {
+        "port": int(os.environ.get("EDGE_GATEWAY_ETCHER_PORT", "5001")),
+        "type": "ETCHER",
+    },
 }
 
 MQTT_HOST         = os.environ.get("MQTT_HOST", "127.0.0.1")
-MQTT_PORT         = 1883
+MQTT_PORT         = int(os.environ.get("MQTT_PORT", "1883"))
 MQTT_TOPIC_PREFIX = "factory/equipment"
 # 토픽 예: factory/equipment/CVD-CHAMBER-01/telemetry
 

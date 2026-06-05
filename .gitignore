@@ -26,6 +26,7 @@ logs/
 backend/logs/
 infra/mosquitto/data/
 infra/mosquitto/log/
+deploy/onprem/backups/
 
 # Local environment / secrets
 .env
